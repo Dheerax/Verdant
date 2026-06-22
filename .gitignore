@@ -1,0 +1,26 @@
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+backend/.venv/
+backend/*.egg-info/
+
+# Secrets — never commit
+backend/.env
+
+# Frontend (also covered by frontend/.gitignore)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+
+# HuggingFace model weights (downloaded at runtime)
+**/.cache/
+**/huggingface/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.suo
+*.sw?
+.idea/
