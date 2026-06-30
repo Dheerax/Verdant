@@ -5,7 +5,9 @@ Run:  uvicorn app.main:app --port 8000   (from the backend/ folder)
 
 from __future__ import annotations
 
+import json
 import os
+import re
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -90,6 +92,108 @@ async def _call_ollama(question: str, kb_context: str) -> str | None:
     except Exception as exc:
         print(f"[ollama] call failed: {exc}")
     return None
+
+
+_GROWPLAN_SYSTEM = (
+    "You are VERDANT's master grower. Produce a complete controlled-environment "
+    "grow plan for the requested crop as STRICT JSON only — no prose, no markdown. "
+    "Schema: {\"crop\": str, \"summary\": str (one sentence), \"totalWeeks\": int, "
+    "\"stages\": [{\"name\": str, \"weeks\": str (e.g. '1-2'), \"temp\": str, "
+    "\"vpd\": str, \"ec\": str, \"light\": str (photoperiod + PPFD), "
+    "\"tasks\": [str, str, str], \"watch\": str (one risk to watch)}]}. "
+    "Give 4-6 stages from germination to harvest. Be specific and data-driven "
+    "with real numbers. Output ONLY the JSON object."
+)
+
+
+def _extract_json(text: str) -> dict | None:
+    """Pull the first JSON object out of an LLM response (handles code fences)."""
+    if not text:
+        return None
+    text = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.MULTILINE).strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1:
+        return None
+    try:
+        return json.loads(text[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+
+
+def _growplan_fallback(crop: str) -> dict:
+    """Deterministic plan used when the LLM is unavailable."""
+    return {
+        "ok": True,
+        "offline": True,
+        "crop": crop.title(),
+        "summary": f"A general controlled-environment schedule for {crop.title()} from seed to harvest.",
+        "totalWeeks": 8,
+        "stages": [
+            {"name": "Germination", "weeks": "1", "temp": "22-24°C", "vpd": "0.4-0.6 kPa",
+             "ec": "0.5-0.8", "light": "16h · 150 PPFD", "watch": "Damping-off in wet media",
+             "tasks": ["Sow into pre-moistened rockwool or plugs", "Keep humidity 80%+ under a dome",
+                       "Bottom-water only; never let media dry out"]},
+            {"name": "Seedling", "weeks": "2", "temp": "21-23°C", "vpd": "0.6-0.8 kPa",
+             "ec": "0.8-1.2", "light": "16h · 200 PPFD", "watch": "Stretching from weak light",
+             "tasks": ["Remove humidity dome gradually", "Begin quarter-strength nutrients",
+                       "Add gentle airflow to strengthen stems"]},
+            {"name": "Vegetative", "weeks": "3-5", "temp": "20-24°C", "vpd": "0.8-1.1 kPa",
+             "ec": "1.4-1.8", "light": "16h · 300 PPFD", "watch": "Nutrient tip-burn at high EC",
+             "tasks": ["Ramp to full-strength nutrients", "Top/prune to shape the canopy",
+                       "Scout leaf undersides for pests twice weekly"]},
+            {"name": "Maturation", "weeks": "6-7", "temp": "19-23°C", "vpd": "1.0-1.2 kPa",
+             "ec": "1.6-2.0", "light": "14h · 350 PPFD", "watch": "Humidity spikes inviting mildew",
+             "tasks": ["Hold steady feeding and climate", "Increase airflow as canopy fills",
+                       "Begin checking for harvest readiness"]},
+            {"name": "Harvest", "weeks": "8", "temp": "18-22°C", "vpd": "1.0-1.2 kPa",
+             "ec": "1.2-1.6", "light": "12h · 300 PPFD", "watch": "Over-maturity reducing quality",
+             "tasks": ["Harvest in the morning for best turgor", "Use clean, sanitised tools",
+                       "Cool immediately to extend shelf life"]},
+        ],
+    }
+
+
+async def _growplan_llm(crop: str) -> dict | None:
+    if not OLLAMA_API_KEY:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
+            r = await client.post(
+                f"{OLLAMA_BASE}/api/chat",
+                headers={"Authorization": f"Bearer {OLLAMA_API_KEY}"},
+                json={
+                    "model": OLLAMA_MODEL,
+                    "messages": [
+                        {"role": "system", "content": _GROWPLAN_SYSTEM},
+                        {"role": "user", "content": f"Crop: {crop}"},
+                    ],
+                    "stream": False,
+                },
+            )
+            if r.status_code == 200:
+                parsed = _extract_json(r.json()["message"]["content"])
+                if parsed and parsed.get("stages"):
+                    parsed["ok"] = True
+                    parsed["offline"] = False
+                    return parsed
+            print(f"[growplan] HTTP {r.status_code}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"[growplan] failed: {exc}")
+    return None
+
+
+class GrowPlanQuery(BaseModel):
+    crop: str
+
+
+@app.post("/api/growplan")
+async def growplan(q: GrowPlanQuery):
+    crop = q.crop.strip()
+    if not crop:
+        raise HTTPException(status_code=400, detail="empty crop")
+    plan = await _growplan_llm(crop)
+    return plan or _growplan_fallback(crop)
 
 
 @app.get("/api/health")

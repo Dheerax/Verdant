@@ -34,12 +34,15 @@ export function Topbar({
           <p className="mt-1 font-mono text-[11px] tracking-wide text-muted">{current.hint}</p>
         </div>
 
-        {/* search (decorative) */}
-        <div className="glass-soft hidden items-center gap-2 rounded-full px-3.5 py-2 text-muted xl:flex">
+        {/* command bar trigger */}
+        <button
+          onClick={() => window.dispatchEvent(new Event('verdant:cmdk'))}
+          className="glass-soft hidden items-center gap-2 rounded-full px-3.5 py-2 text-muted transition-all hover:text-ink-dim xl:flex"
+        >
           <Search size={14} />
-          <span className="font-mono text-[11px]">Search zones, crops…</span>
+          <span className="font-mono text-[11px]">Jump to any tool…</span>
           <kbd className="ml-2 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd>
-        </div>
+        </button>
 
         {/* right cluster */}
         <div className="flex items-center gap-2.5">

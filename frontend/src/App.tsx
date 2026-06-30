@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Background } from './components/Background'
+import { CommandPalette } from './components/CommandPalette'
 import { Sidebar, type View } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
 import { Landing } from './sections/Landing'
@@ -8,6 +9,10 @@ import { Overview } from './sections/Overview'
 import { PlantDoctor } from './sections/PlantDoctor'
 import { Scanner } from './sections/Scanner'
 import { Advisor } from './sections/Advisor'
+import { Simulator } from './sections/Simulator'
+import { VpdMatrix } from './sections/VpdMatrix'
+import { GrowPlan } from './sections/GrowPlan'
+import { NutrientLab } from './sections/NutrientLab'
 
 function renderView(view: View, navigate: (v: View) => void) {
   switch (view) {
@@ -17,6 +22,14 @@ function renderView(view: View, navigate: (v: View) => void) {
       return <PlantDoctor />
     case 'scanner':
       return <Scanner />
+    case 'simulator':
+      return <Simulator />
+    case 'vpd':
+      return <VpdMatrix />
+    case 'growplan':
+      return <GrowPlan />
+    case 'nutrients':
+      return <NutrientLab />
     case 'advisor':
       return <Advisor />
   }
@@ -46,6 +59,7 @@ export default function App() {
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
             <Sidebar active={view} onNavigate={navigate} onHome={goHome} />
+            <CommandPalette onNavigate={navigate} />
             <div className="lg:pl-[268px]">
               <div className="mx-auto max-w-[1340px] px-4 pb-12 md:px-8">
                 <Topbar active={view} onNavigate={navigate} onHome={goHome} />

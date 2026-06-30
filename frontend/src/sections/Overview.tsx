@@ -1,7 +1,11 @@
 import {
   ArrowUpRight,
+  Beaker,
   Bot,
+  CalendarRange,
   Droplets,
+  Gauge,
+  LayoutGrid,
   ScanLine,
   Sparkles,
   Stethoscope,
@@ -15,7 +19,11 @@ import type { View } from '../components/Sidebar'
 const FEATURES: { id: View; icon: typeof Stethoscope; title: string; desc: string; tag: string }[] = [
   { id: 'doctor', icon: Stethoscope, title: 'Plant Doctor', desc: 'Upload a leaf — a Vision Transformer flags disease and prescribes a full treatment plan.', tag: 'ViT' },
   { id: 'scanner', icon: ScanLine, title: 'Species Scanner', desc: 'Identify any plant from a single photo with a Vision Transformer classifier.', tag: 'ViT' },
-  { id: 'advisor', icon: Bot, title: 'AI Advisor', desc: 'Ask any growing question — powered by Gemma 3 with curated agronomy knowledge.', tag: 'LLM' },
+  { id: 'simulator', icon: Gauge, title: 'Grow Simulator', desc: 'A live digital twin — tune the climate and a real agronomy model predicts growth & yield.', tag: 'model' },
+  { id: 'vpd', icon: LayoutGrid, title: 'VPD Matrix', desc: 'The pro climate console — a temp×humidity heatmap with live VPD zones from the Tetens equation.', tag: 'climate' },
+  { id: 'growplan', icon: CalendarRange, title: 'AI Grow Plan', desc: 'Name any crop and Gemma 3 writes a full germination-to-harvest schedule with climate targets.', tag: 'LLM' },
+  { id: 'nutrients', icon: Beaker, title: 'Nutrient Lab', desc: 'A fertilizer mass-balance solver — exact salt doses, mixing order and elemental ppm profile.', tag: 'solver' },
+  { id: 'advisor', icon: Bot, title: 'AI Advisor', desc: 'Ask any growing question — Gemma 3 grounded by a curated agronomy knowledge base.', tag: 'LLM' },
 ]
 
 const MODELS = [
@@ -63,7 +71,7 @@ export function Overview({ onNavigate }: { onNavigate: (v: View) => void }) {
               {[
                 { k: '412', u: 'kg/mo', l: 'Projected yield' },
                 { k: '95%', u: 'less', l: 'Water used' },
-                { k: '3', u: 'models', l: 'AI Models' },
+                { k: '7', u: 'tools', l: 'AI Tools' },
               ].map((s) => (
                 <div key={s.l}>
                   <div className="font-display text-2xl font-bold text-ink">
@@ -154,7 +162,7 @@ export function Overview({ onNavigate }: { onNavigate: (v: View) => void }) {
         <SectionTitle
           eyebrow="Platform"
           title="One brain for the whole farm"
-          sub="Six integrated modules — each a click away. Tap any card to open it."
+          sub="Seven integrated AI tools — each a click away. Tap any card to open it, or hit ⌘K to jump."
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (

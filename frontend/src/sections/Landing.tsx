@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, Bot, ScanLine, Stethoscope, Droplets, Zap, Leaf } from 'lucide-react'
-import { Chip, Reveal } from '../components/ui'
+import { Reveal } from '../components/ui'
 
 const HOW: {
   icon: typeof Stethoscope

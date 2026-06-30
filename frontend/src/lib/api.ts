@@ -43,6 +43,26 @@ export interface AdvisorResult {
   sources: string[]
 }
 
+export interface GrowStage {
+  name: string
+  weeks: string
+  temp: string
+  vpd: string
+  ec: string
+  light: string
+  tasks: string[]
+  watch: string
+}
+
+export interface GrowPlan {
+  ok: boolean
+  offline: boolean
+  crop: string
+  summary: string
+  totalWeeks: number
+  stages: GrowStage[]
+}
+
 const TIMEOUT = 60000
 
 async function postFile<T>(url: string, file: File): Promise<T> {
@@ -100,6 +120,21 @@ export async function askAdvisor(question: string): Promise<AdvisorResult> {
   }
 }
 
+export async function generateGrowPlan(crop: string): Promise<GrowPlan> {
+  try {
+    const res = await fetch('/api/growplan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ crop }),
+      signal: AbortSignal.timeout(TIMEOUT),
+    })
+    if (!res.ok) throw new Error()
+    return await res.json()
+  } catch {
+    return demoGrowPlan(crop)
+  }
+}
+
 /* ---------- offline demo fallbacks ---------- */
 
 function demoDiagnose(): DiagnoseResult {
@@ -142,6 +177,23 @@ function demoIdentify(): IdentifyResult {
       { label: 'Rosemary', score: 0.88 },
       { label: 'Pothos', score: 0.07 },
       { label: 'Aloe Vera', score: 0.03 },
+    ],
+  }
+}
+
+function demoGrowPlan(crop: string): GrowPlan {
+  return {
+    ok: true,
+    offline: true,
+    crop: crop ? crop.charAt(0).toUpperCase() + crop.slice(1) : 'Crop',
+    summary: `A general controlled-environment schedule for ${crop || 'this crop'} from seed to harvest (offline template — start the backend for an AI-tailored plan).`,
+    totalWeeks: 8,
+    stages: [
+      { name: 'Germination', weeks: '1', temp: '22–24°C', vpd: '0.4–0.6 kPa', ec: '0.5–0.8', light: '16h · 150 PPFD', watch: 'Damping-off in wet media', tasks: ['Sow into pre-moistened rockwool or plugs', 'Keep humidity 80%+ under a dome', 'Bottom-water only; never let media dry out'] },
+      { name: 'Seedling', weeks: '2', temp: '21–23°C', vpd: '0.6–0.8 kPa', ec: '0.8–1.2', light: '16h · 200 PPFD', watch: 'Stretching from weak light', tasks: ['Remove humidity dome gradually', 'Begin quarter-strength nutrients', 'Add gentle airflow to strengthen stems'] },
+      { name: 'Vegetative', weeks: '3–5', temp: '20–24°C', vpd: '0.8–1.1 kPa', ec: '1.4–1.8', light: '16h · 300 PPFD', watch: 'Nutrient tip-burn at high EC', tasks: ['Ramp to full-strength nutrients', 'Prune to shape the canopy', 'Scout leaf undersides for pests twice weekly'] },
+      { name: 'Maturation', weeks: '6–7', temp: '19–23°C', vpd: '1.0–1.2 kPa', ec: '1.6–2.0', light: '14h · 350 PPFD', watch: 'Humidity spikes inviting mildew', tasks: ['Hold steady feeding and climate', 'Increase airflow as canopy fills', 'Begin checking for harvest readiness'] },
+      { name: 'Harvest', weeks: '8', temp: '18–22°C', vpd: '1.0–1.2 kPa', ec: '1.2–1.6', light: '12h · 300 PPFD', watch: 'Over-maturity reducing quality', tasks: ['Harvest in the morning for best turgor', 'Use clean, sanitised tools', 'Cool immediately to extend shelf life'] },
     ],
   }
 }
